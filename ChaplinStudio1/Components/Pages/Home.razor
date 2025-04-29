@@ -1,0 +1,1029 @@
+﻿@page "/"
+@inject IJSRuntime JsRuntime
+@using ChaplinStudio1
+@using CommunityToolkit.Maui.Storage
+@using System.Text
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Database.New();
+    }
+    string currentXML = "test.xml";
+    string debugInfo = "";
+    WhatIsIt what = WhatIsIt.Nothing;
+    Movie? movie = null;
+    Part? part = null;
+    Seq? sequence = null;
+    List<string> SuggestedSpeaker = new List<string>();
+    string taraf = "ltr";
+    string felesh = "►►►";
+    string NotFound = "";
+    string jahat = "left";
+    string currentSpeaker = "";
+    string suggestedCharacters = "";
+    string newCharacter1 = "hidden";
+    bool isBeingEdited = false;
+    string temp_Speaker = "";
+    string temp_Note = "";
+    string temp_Manner = "";
+    string temp_Deed = "";
+    string temp_Quote = "";
+    int Movie_Index = 0;
+    int Act_Index = 0;
+    int Seq_Index = 0;
+    int Hap_Index = 0;
+    int MannerIndex = 0;
+    List<string> AllManners = ["(V.O.)", "(O.S.)", "(O.C.)", "(CONT'D')", "(SUBTITLE)"];
+    Element BeingCopied = null;
+    Element CopyMe = null;
+    bool somethingIsBeingCopied = false;
+    string editPrev = "Preview";
+    bool isPreview = false;
+    string currentHTML = "test.html";
+}
+
+<style>
+    * {
+        font-family: 'Courier New';
+        font-weight: bolder;
+        font-size: medium;
+        margin: 10px;
+    }
+
+    button {
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 5px;
+    }
+
+    .navigationButtons {
+        margin-top: 0px;
+        margin-bottom: 0px;
+        margin-left: 3px;
+        margin-right: 3px;
+        font-size: smaller;
+        width: 130px;
+    }
+
+    .FilmTitle {
+    }
+
+    input {
+        direction: @taraf;
+        text-align: @jahat;
+    }
+
+    textarea {
+        height: 130px;
+        font-size: large;
+    }
+
+    .addActor {
+        color: blue;
+    }
+
+    .info {
+        background-color: orange;
+    }
+
+    .Long {
+        width: 800px;
+    }
+
+    .editInfo {
+        font-size: small;
+    }
+
+    .speaker {
+        background-color: lightcoral;
+        text-transform: uppercase;
+        margin: 0px;
+        width: 350px;
+        height: 50px;
+    }
+
+    .manner {
+        background-color: lightblue;
+        margin: 0px;
+        width: 350px;
+        height: 50px;
+    }
+
+    .Quote {
+        background-color: lightgreen;
+        width: 800px;
+        margin: 0px;
+    }
+
+    .note {
+        background-color: lightgray;
+        font-style: italic;
+        width: 800px;
+        margin: 0px;
+    }
+
+    .bigText {
+        height: 200px;
+    }
+
+    .inlocday {
+        color: darkorange;
+    }
+
+    .kootah {
+        width: 200px;
+    }
+
+    .medium {
+        width: 400px;
+    }
+
+    .del {
+        color: darkred;
+        font-size: xx-large;
+        margin-right: 30px;
+    }
+
+    .del2 {
+        color: blue;
+        font-size: large;
+        margin-left: 300px;
+    }
+
+    .deed {
+        background-color: lightskyblue;
+    }
+
+    table {
+        border-collapse: separate;
+        border-spacing: 2px;
+    }
+
+    td {
+        padding: 2px;
+        border-style: solid;
+        border-radius: 6px;
+    }
+
+    text, textarea {
+        border: solid black 2px;
+        border-radius: 6px;
+        direction: @taraf;
+    }
+
+    .buttonManners {
+        width: 110px;
+        margin-left: 10px;
+        font-weight: bolder;
+        margin-bottom: 30px;
+        height: 50px;
+    }
+
+    .salam {
+        font-size: large;
+        margin-left: 10px;
+        font-weight: bolder;
+        margin-bottom: 30px;
+    }
+</style>
+
+<h3 style="font-size: xx-large; text-align:center; font-weight:bolder; color:darkgreen;">
+    Chaplin Studio 1.0
+</h3>
+<br />
+<span style="color:blue; text-align:center;">ebrahim.mehri@gmail.com</span>
+<hr>
+<br />
+<button style="width:150px;" @onclick="() => {Database.New(); what = WhatIsIt.Nothing; }">New Database</button>
+<button style="width:150px;" @onclick="async () => {LoadingSuccess();}">Open...</button>
+<button style="width:150px;" @onclick="() => { try { File.WriteAllText(currentXML, Database.Save());} catch {} }">Save</button>
+<button style="width:150px;" @onclick="() => { saveToDB();}">Save As...</button>
+<br />
+<hr />
+<br />
+@if (Database.Author != null && Database.Films != null)
+{
+    <div style="margin-left: 30px; margin-right: 30px;">
+        @if (what == WhatIsIt.Nothing)
+        {
+            movie = null;
+            part = null;
+            sequence = null;
+            <table>
+                <tr>
+                    <td>DIRECTION:</td>
+                    <td>
+                        <button class="del" @onclick="Jahat">@felesh</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Name</td>
+                    <td><input @bind="@Database.Author.Name" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>Biography</td>
+                    <td><textarea @bind="@Database.Author.Biography" class="Long info" /></td>
+                </tr>
+                <tr>
+                    <td>Email</td>
+                    <td><input @bind="@Database.Author.Email" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>Phone</td>
+                    <td><input @bind="@Database.Author.Phone" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>Address</td>
+                    <td><input @bind="@Database.Author.Address" class="Long info" /></td>
+                </tr>
+                @if (Database.Films != null && Database.Films.Count > 0)
+                {
+                    foreach (var xx in Database.Films)
+                    {
+                        <tr>
+                            <td>
+                                <a class="del" href="#" @onclick="() => {
+                                    deleteEpisode(xx);
+                            }">X</a>
+                            </td>
+                            <td>
+                                <a href="" @onclick="() => {movie = xx;what = WhatIsIt.Movie;isBeingEdited = false;}">►►►</a>
+                                @if (xx.Script == null || xx.Script.Count == 0)
+                                {
+                                    <span style="color:blue;">(Empty)</span>
+                                }
+                                <span class="FilmTitle">@xx.Title</span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </table>
+            <br />
+            <br />
+            <button @onclick="() => {Movie mm = new Movie(string.Empty, string.Empty, string.Empty, string.Empty, null); Database.Films.Add(mm);}">+ Movie</button>
+            <br />
+            <br />
+        }
+        @if (what == WhatIsIt.Movie)
+        {
+            part = null;
+            sequence = null;
+            <div><a href="" @onclick="() => {what = WhatIsIt.Nothing;isBeingEdited = false;}">◄◄◄</a> Back to Cover Page</div>
+            <br />
+            @if (Database.Films != null)
+            {
+                <button @onclick="()=>{if(Movie_Index > 0) {Movie_Index--; movie=Database.Films[Movie_Index];}}" class="navigationButtons">Back Episode</button>
+                <button @onclick="()=>{if(Movie_Index < Database.Films.Count - 1) {Movie_Index++;movie=Database.Films[Movie_Index];}}" class="navigationButtons">Next Episode</button>
+            }
+            <span>&nbsp;(@movie.Title)</span>
+            <br />
+            <br />
+            <span>See the Screenplay in HTML format: &nbsp;</span>
+            <button @onclick="()=>{
+                    saveToHTML();
+                }">
+                Save As...
+            </button>
+            <table>
+                <tr>
+                    <td>TITLE:</td>
+                    <td><input @bind="@movie.Title" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>BASED ON:</td>
+                    <td><input @bind="@movie.BasedOn" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>DATE:</td>
+                    <td><input @bind="@movie.Year" class="medium info" /></td>
+                </tr>
+                <tr>
+                    <td>NOTE:</td>
+                    <td><textarea @bind="@movie.Note" class="note Long" /></td>
+                </tr>
+            </table>
+            <table>
+                @if (movie.Script != null)
+                {
+                    int uAct = 0;
+                    foreach (var xx in movie.Script)
+                    {
+                        int uu = uAct;
+                        <tr>
+                            <td>
+                                <a class="del" href="#" @onclick="async () => deleteAct(xx)">X</a>
+                            </td>
+                            <td>
+                                @if (uu > 0)
+                                {
+                                    <button @onclick="()=>avazAct(uu - 1, uu)">▲</button>
+                                }
+                            </td>
+                            <td>
+                                @if (uu > 0 && uu < movie.Script.Count - 1)
+                                {
+                                    <span> ● </span>
+                                }
+                            </td>
+                            <td>
+                                @if (uu < movie.Script.Count - 1)
+                                {
+                                    <button @onclick="()=>avazAct(uu, uu + 1)">▼</button>
+                                }
+                            </td>
+                            <td>
+                                <a href="" @onclick="() => {part = xx; what = WhatIsIt.Act;isBeingEdited = false; Act_Index = uu;}">►►►</a>
+                                @if (xx.Sequences == null || xx.Sequences.Count == 0)
+                                {
+                                    <span style="color:blue;">(Empty)</span>
+                                }
+                                <span class="FilmTitle">@xx.Description</span>
+                            </td>
+                        </tr>
+                        uAct++;
+                    }
+                }
+                else
+                {
+                    movie.Script = new List<Part>();
+                }
+            </table>
+            <br />
+            <br />
+            <button @onclick="() => {Part mm = new Part(null, string.Empty, string.Empty); movie.Script.Add(mm);}">+ Act</button>
+            <br />
+            <br />
+        }
+        @if (what == WhatIsIt.Act)
+        {
+            sequence = null;
+            <div><a href="" @onclick="() => {what = WhatIsIt.Nothing;isBeingEdited = false; what=WhatIsIt.Movie;}">◄◄◄</a> Back to Cover Page</div>
+            <div>
+                <a href="" @onclick="() => {what = WhatIsIt.Movie;isBeingEdited = false; what=WhatIsIt.Movie;}">◄◄◄</a>
+                List of Acts
+            </div>
+            <table>
+                @if (Database.Films != null)
+                {
+                    <tr>
+                        <td>
+                            <button @onclick="()=>{if(Movie_Index > 0) {Movie_Index--; movie=Database.Films[Movie_Index];what=WhatIsIt.Movie;}}" class="navigationButtons">Back Episode</button>
+                        </td>
+                        <td>
+                            <button @onclick="()=>{if(Movie_Index < Database.Films.Count - 1) {Movie_Index++;movie=Database.Films[Movie_Index];what=WhatIsIt.Movie;}}" class="navigationButtons">Next Episode</button>
+                            &nbsp;(@movie.Title)
+                        </td>
+                    </tr>
+                }
+                @if (movie != null && movie.Script != null)
+                {   <tr>
+                        <td>
+                            <button @onclick="()=>{if(Act_Index > 0) {Act_Index--;part=movie.Script[Act_Index];} }" class="navigationButtons">Back Act</button>
+                        </td>
+                        <td>
+                            <button @onclick="()=>{if(Act_Index < movie.Script.Count - 1) {Act_Index++;part=movie.Script[Act_Index];}}" class="navigationButtons">Next Act</button>
+                                &nbsp;(@part.Description)
+                        </td>
+                    </tr>
+                }
+            </table>
+            <br />
+            <br />
+            <table>
+                <tr>
+                    <td>DESCRIPTION: </td>
+                    <td><input @bind="@part.Description" class="Long info" /></td>
+                </tr>
+                <tr>
+                    <td>NOTE: </td>
+                    <td><textarea @bind="@part.Note" class="note Long" /></td>
+                </tr>
+            </table>
+            <table>
+                @if (part.Sequences != null)
+                {
+                    int uSeq = 0;
+                    foreach (var xx in part.Sequences)
+                    {
+                        int uu2 = uSeq;
+                        <tr>
+                            <td>
+                                <a class="del" href="#" @onclick="() => {deleteSeq(xx);}">X</a>
+                            </td>
+                            <td>
+                                @if (uu2 > 0)
+                                {
+                                    <button @onclick="()=>avazSeq(uu2 - 1, uu2)">▲</button>
+                                }
+                            </td>
+                            <td>
+                                @if (uu2 > 0 && uu2 < part.Sequences.Count - 1)
+                                {
+                                    <span> ● </span>
+                                }
+                            </td>
+                            <td>
+                                @if (uu2 < part.Sequences.Count - 1)
+                                {
+                                    <button @onclick="()=>avazSeq(uu2, uu2 + 1)">▼</button>
+                                }
+                            </td>
+                            <td>
+                                <a href="" @onclick="() => {sequence = xx; what = WhatIsIt.Sequence;isBeingEdited = false;Seq_Index = uu2;}">►►►</a>
+                                @if (xx.Happenings == null || xx.Happenings.Count == 0)
+                                {
+                                    <span style="color:blue;">(Empty) &nbsp;</span>
+                                }
+                                <span class="FilmTitle">@xx.Description</span>
+                            </td>
+                        </tr>
+                        uSeq++;
+                    }
+                }
+                else
+                {
+                    part.Sequences = new List<Seq>();
+                }
+            </table>
+            <br />
+            <br />
+            <button @onclick="() => {Seq mm = new Seq(true,true,true, string.Empty, string.Empty, null, string.Empty); part.Sequences.Add(mm);}">+ Sequence</button>
+            <br />
+            <br />
+        }
+        @if (what == WhatIsIt.Sequence)
+        {
+            <div><a href="" @onclick="() => {what = WhatIsIt.Nothing;clearEdit();}">◄◄◄</a> Back to Cover Page</div>
+            <div><a href="" @onclick="() => {what = WhatIsIt.Movie;isBeingEdited = false;clearEdit();}">◄◄◄</a> List of Acts</div>
+            <div><a href="" @onclick="() => {what = WhatIsIt.Act;isBeingEdited = false;clearEdit();}">◄◄◄</a> List of Sequences</div>
+            <table>
+                <tr>
+                    @if (Database.Films != null)
+                    {
+                        <td>
+                            <button @onclick="()=>{if(Movie_Index > 0) {Movie_Index--; movie=Database.Films[Movie_Index]; what=WhatIsIt.Movie; clearEdit();}}" class="navigationButtons">Back Episode</button>
+                        </td>
+                        <td>
+                            <button @onclick="()=>{if(Movie_Index < Database.Films.Count - 1) {Movie_Index++;movie=Database.Films[Movie_Index];what=WhatIsIt.Movie; clearEdit();}}" class="navigationButtons">Next Episode</button>
+                            (@movie.Title)
+                        </td>
+                    }
+                </tr>
+                @if (movie != null && movie.Script != null)
+                {
+                    <tr>
+                        <td>
+                            <button @onclick="()=>{if(Act_Index > 0) {
+                    Act_Index--;
+                    part=movie.Script[Act_Index];
+                    if(part.Sequences==null || part.Sequences.Count==0) what=WhatIsIt.Act;
+                        else sequence=part.Sequences[0];
+                    clearEdit();
+                    StateHasChanged();}
+                }" class="navigationButtons">
+                                Back Act
+                            </button>
+                        </td>
+                        <td>
+                            <button @onclick="()=>{if (Act_Index < movie.Script.Count - 1) {
+                    Act_Index++;
+                    part=movie.Script[Act_Index];
+                    if(part.Sequences==null || part.Sequences.Count==0) what=WhatIsIt.Act;
+                        else sequence=part.Sequences[0];
+                    clearEdit();
+                    StateHasChanged();}
+                }" class="navigationButtons">
+                                Next Act
+                            </button>
+                            (@part.Description)
+                        </td>
+                    </tr>
+                }
+            </table>
+            <br />
+            <table>
+                <tr>
+                    <td>DESCRIPTION:</td>
+                    <td><input @bind="@sequence.Description" class="Long info" /></td>
+                    <td><button @onclick="()=>deleteSeq(sequence)">Delete Sequence</button></td>
+                    <td>
+                        <button @onclick="()=>{
+                        TogglePreview();
+                    }">
+                            Show @editPrev
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>NOTE:</td>
+                    <td><textarea class="note Long" @bind="@sequence.Note" /></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+            <div class="inlocday">
+                <button @onclick="()=>{
+                    clearEdit();
+                    if (Seq_Index > 0)
+                    {
+                        Seq_Index--;
+                        sequence = Database.Films[Movie_Index].Script[Act_Index].Sequences[Seq_Index];
+                    }
+                    else
+                    {
+                        if (Act_Index > 0 && Database.Films[Movie_Index].Script[Act_Index - 1].Sequences.Count > 0)
+                        {
+                            Act_Index--;
+                            Seq_Index = Database.Films[Movie_Index].Script[Act_Index].Sequences.Count - 1;
+                            part = Database.Films[Movie_Index].Script[Act_Index];
+                            sequence = part.Sequences[Seq_Index];
+                        }
+                        else
+                        {
+                            what = WhatIsIt.Act;
+                        }
+                    }
+                }
+                                                                                        ">
+                    Back Scene
+                </button>
+                @if (!isPreview)
+                {
+                    <button @onclick="() => {Seq mm = new Seq(true,true,true, string.Empty, string.Empty, null, string.Empty); part.Sequences.Insert(Seq_Index,mm);sequence=part.Sequences[Seq_Index];}">New Scene Before</button>
+                    <button @onclick="() => {sequence.IsFade = !sequence.IsFade;}" href="#" style="width:150px;">
+                        @if (sequence.IsFade)
+                        {
+                            <span>DISSOLVE TO</span>
+                        }
+                        else
+                        {
+                            <span>CUT TO</span>
+                        }
+                    </button>
+                    <button @onclick="() => {sequence.IsIn = !sequence.IsIn;}" href="#">
+                        @if (sequence.IsIn)
+                        {
+                            <span>INT</span>
+                        }
+                        else
+                        {
+                            <span>EXT</span>
+                        }
+                    </button>
+                    <input @bind="@sequence.Location" class="medium" style="background-color:darkorange;text-transform:uppercase;" />
+                    <button @onclick="() => {sequence.IsDay = !sequence.IsDay;}" href="#" style="width:80px;">
+                        @if (sequence.IsDay)
+                        {
+                            <span>DAY</span>
+                        }
+                        else
+                        {
+                            <span>NIGHT</span>
+                        }
+                    </button>
+                    <button @onclick="() => {Seq mm = new Seq(true,true,true, string.Empty, string.Empty, null, string.Empty); part.Sequences.Insert(Seq_Index+1,mm);Seq_Index++; sequence=part.Sequences[Seq_Index];}">New Scene After</button>
+                }
+                <button @onclick="()=>{
+                    clearEdit();
+                    if (part.Sequences != null && Seq_Index < part.Sequences.Count - 1)
+                    {
+                        Seq_Index++;
+                        sequence = Database.Films[Movie_Index].Script[Act_Index].Sequences[Seq_Index];
+                    }
+                    else
+                    {
+                        if (movie.Script.Count > Act_Index + 1 && Database.Films[Movie_Index].Script[Act_Index + 1].Sequences.Count > 0)
+                        {
+                            Seq_Index = 0;
+                            Act_Index++;
+                            part = Database.Films[Movie_Index].Script[Act_Index];
+                            sequence = part.Sequences[0];
+                        }
+                    }
+
+                }">
+                    Next Scene
+                </button>
+            </div>
+            <br />
+            <br />
+            @if (!isPreview)
+            {
+                @if (sequence.Happenings != null)
+                {
+                    @for (int i = 0; i < sequence.Happenings.Count; i++)
+                    {
+                        Element xx = sequence.Happenings[i];
+                        int j = i;
+                        @if (isBeingEdited == false)
+                        {
+                            <button @onclick="() => {Deed mm = new Deed(string.Empty, string.Empty); sequence.Happenings.Insert(j,mm);}">+ Action</button>
+                            <button @onclick="() => {Dialogue mm = new Dialogue(string.Empty, string.Empty, string.Empty, string.Empty); sequence.Happenings.Insert(j,mm);}">+ Dialogue</button>
+                            @if (somethingIsBeingCopied)
+                            {
+                                <span></span>
+                                <button @onclick="() => {
+                                somethingIsBeingCopied = false;
+                                sequence.Happenings.Insert(j, CopyMe);
+                            }">
+                                    Paste Here
+                                </button>
+                            }
+                        }
+                        <table>
+                            <tr>
+                                <td>
+                                    @if (xx.isBeingEdited == true)
+                                    {
+                                        <button class="btn btn-warning" @onclick="() => {isBeingEdited = false;xx.isBeingEdited = false;SuggestedSpeaker.Clear();}">Cancel</button>
+                                    }
+                                    @if (isBeingEdited == false)
+                                    {
+                                        <button style="width:80px;" @onclick="()=>{
+                                        BeingCopied = xx;
+                                        somethingIsBeingCopied = true;
+                                        if(xx is Dialogue dia1)
+                                            CopyMe = new Dialogue(dia1.Quote,dia1.Manner,dia1.Speaker,dia1.Note);
+                                        if(xx is Deed dee1)
+                                            CopyMe = new Deed(dee1.deed,dee1.Note);
+                                        CopyMe.isBeingEdited = false;
+                                    }
+                                                                                                                                                                                                                                                                                                                        ">
+                                            Copy
+                                        </button>
+                                        <br>
+                                        <button style="width:80px;" @onclick="()=>{
+                                        sequence.Happenings.Remove(xx);
+                                        somethingIsBeingCopied = true;
+                                        if(xx is Dialogue dia1)
+                                            CopyMe = new Dialogue(dia1.Quote,dia1.Manner,dia1.Speaker,dia1.Note);
+                                        if(xx is Deed dee1)
+                                            CopyMe = new Deed(dee1.deed,dee1.Note);
+                                        CopyMe.isBeingEdited = false;
+                                    }
+                                                                                                                                                                                                                                                                                                                        ">
+                                            Cut
+                                        </button>
+                                        <br />
+                                        <button style="width:80px;" @onclick="() =>
+                                        {
+                                            isBeingEdited = true;
+                                            xx.isBeingEdited = true;
+                                            if(xx is Dialogue dd)
+                                            {
+                                                set_Temp_Dialogue(dd.Speaker,dd.Manner,dd.Quote,dd.Note);
+                                            }
+                                            if(xx is Deed dd2)
+                                            {
+                                                set_Temp_Deed(dd2.deed,dd2.Note);
+                                            }
+                                        }">
+                                            Edit
+                                        </button>
+                                    }
+                                </td>
+                                <td>
+                                    <table>
+                                        @if (xx is Dialogue)
+                                        {
+                                            Dialogue dd = (Dialogue)xx;
+                                            <tr>
+                                                <td>SPEAKER:</td>
+                                                @if (!xx.isBeingEdited)
+                                                {
+                                                    <td class="speaker">
+                                                        @dd.Speaker
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td>
+                                                        <input class="speaker salam" @bind="temp_Speaker" @bind:after="suggestSpeaker" @bind:event="oninput" />
+                                                        @for (int indexOfButtons = 0; indexOfButtons < SuggestedSpeaker.Count; indexOfButtons++)
+                                                        {
+                                                            int qqq2 = indexOfButtons;
+                                                            <button class="buttonManners"
+                                                                    @onclick="()=>temp_Speaker=SuggestedSpeaker[qqq2]">
+                                                                @SuggestedSpeaker[indexOfButtons]
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                }
+                                            </tr>
+                                            <tr>
+                                                <td style="width:150px;">PARENTHETICAL:</td>
+                                                @if (!xx.isBeingEdited)
+                                                {
+                                                    <td class="manner">
+                                                        @dd.Manner
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td>
+                                                        <input @bind="@temp_Manner" class="manner salam" />
+                                                        @for (int indexOfButtons = 0; indexOfButtons < AllManners.Count; indexOfButtons++)
+                                                        {
+                                                            int qqq = indexOfButtons;
+                                                            <button class="buttonManners"
+                                                                    @onclick="()=>temp_Manner=AllManners[qqq]">
+                                                                @AllManners[indexOfButtons]
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                }
+                                            </tr>
+                                            <tr>
+                                                <td>QUOTE:</td>
+                                                @if (xx.isBeingEdited)
+                                                {
+                                                    <td><textarea @bind="@temp_Quote" class="Quote bigText" /></td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="Quote medium">@dd.Quote</td>
+                                                }
+                                            </tr>
+                                            <tr>
+                                                <td>NOTE:</td>
+                                                @if (xx.isBeingEdited)
+                                                {
+                                                    <td>
+                                                        <textarea @bind="@temp_Note" class="note bigText" />
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="note Long">@dd.Note</td>
+                                                }
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            Deed dd = (Deed)xx;
+                                            <tr>
+                                                <td style="width:150px;">ACTION:</td>
+                                                @if (xx.isBeingEdited)
+                                                {
+                                                    <td><textarea @bind="@temp_Deed" class="deed Long" /></td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="deed Long">@dd.deed</td>
+                                                }
+                                            </tr>
+                                            <tr>
+                                                <td>NOTE:</td>
+                                                @if (xx.isBeingEdited)
+                                                {
+                                                    <td><textarea @bind="@temp_Note" class="note Long" /></td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="note Long">@dd.Note</td>
+                                                }
+                                            </tr>
+                                        }
+                                        @if (xx.isBeingEdited)
+                                        {
+                                            <tr>
+                                                <td>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success"
+                                                            @onclick="() =>
+                                                {
+                                                    int i2 = j;
+                                                    Hap_Index = j;
+                                                    isBeingEdited = false;
+                                                    if(Database.Films[Movie_Index].Script[Act_Index].Sequences[Seq_Index].Happenings[i2] is Deed yy)
+                                                    {
+                                                        yy.deed = temp_Deed;
+                                                        yy.Note = temp_Note;
+                                                        yy.isBeingEdited = false;
+                                                    }
+                                                    if(Database.Films[Movie_Index].Script[Act_Index].Sequences[Seq_Index].Happenings[i2] is Dialogue zz)
+                                                    {
+                                                        zz.isBeingEdited = false;
+                                                        zz.Speaker = temp_Speaker;
+                                                        zz.Manner = temp_Manner;
+                                                        zz.Quote = temp_Quote;
+                                                        zz.Note = temp_Note;
+                                                        if (!string.IsNullOrWhiteSpace(temp_Speaker))
+                                                        {
+                                                            temp_Speaker = temp_Speaker.ToUpper().Trim();
+                                                            try
+                                                            {
+                                                                Database.Films[Movie_Index].Actors[temp_Speaker]++;
+                                                            }
+                                                            catch
+                                                            {
+                                                                Database.Films[Movie_Index].Actors[temp_Speaker] = 1;
+                                                            }
+                                                        }
+                                                        SuggestedSpeaker.Clear();
+                                                    }
+                                                }">
+                                                        OK
+                                                    </button>
+                                                    <button class="btn btn-danger" @onclick="() => {
+                                                        int i3 = j;
+                                                        deleteElement(Database.Films[Movie_Index].Script[Act_Index].Sequences[Seq_Index].Happenings[i3]);
+                                                        isBeingEdited = false;
+                                                        SuggestedSpeaker.Clear();
+                                                        Database.SeeActors();
+                                                    }">
+                                                        Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+                else
+                {
+                    sequence.Happenings = new List<Element>();
+                }
+                @if (isBeingEdited == false)
+                {
+                    <button class="MainButtons" @onclick="() => {Deed mm = new Deed(string.Empty, string.Empty); sequence.Happenings.Add(mm);}">+ Action</button>
+                    <button class="MainButtons" @onclick="() => {Dialogue mm = new Dialogue(string.Empty, string.Empty, string.Empty, string.Empty); sequence.Happenings.Add(mm);}">+ Dialogue</button>
+                    @if (isBeingEdited == false)
+                    {
+                        @if (somethingIsBeingCopied)
+                        {
+                            <button class="MainButtons" @onclick="() => {
+                                somethingIsBeingCopied = false;
+                                sequence.Happenings.Add(CopyMe);
+                                    sequence.Happenings.Remove(BeingCopied);
+                            }">
+                                Paste Here
+                            </button>
+                        }
+                    }
+                }
+            }
+            else
+            {
+                @((MarkupString)Database.Seq_HTML(sequence))
+            }
+        }
+    </div>
+}
+<h1>@debugInfo</h1>
+@{
+    void Jahat()
+    {
+        if (taraf == "rtl")
+        { taraf = "ltr"; felesh = "►►►"; jahat = "left"; }
+        else
+        { taraf = "rtl"; felesh = "◄◄◄"; jahat = "right"; }
+    }
+    void clearEdit()
+    {
+        SuggestedSpeaker.Clear();
+        temp_Speaker = "";
+        isBeingEdited = false;
+        Element BeingCopied = null;
+        for (int i = 0; i < sequence.Happenings.Count; i++)
+            sequence.Happenings[i].isBeingEdited = false;
+    }
+    void set_Temp_Deed(string deed1, string note1)
+    {
+        temp_Deed = deed1;
+        temp_Note = note1;
+    }
+    void set_Temp_Dialogue(string speaker1, string manner1, string quote1, string note1)
+    {
+        temp_Speaker = speaker1;
+        temp_Manner = manner1;
+        temp_Quote = quote1;
+        temp_Note = note1;
+    }
+    async Task suggestSpeaker()
+    {
+        SuggestedSpeaker.Clear();
+        if (string.IsNullOrWhiteSpace(temp_Speaker)) return;
+        string actorName = temp_Speaker.ToUpper().Trim();
+        var names =
+            (from xx in Database.Films[Movie_Index].Actors
+             where xx.Key.IndexOf(actorName) == 0
+             orderby xx.Value descending
+             select xx.Key).ToList();
+        int max = names.Count;
+        if (max == 0) return;
+        if (max > 5) max = 5;
+        for (int i = 0; i < max; i++)
+            SuggestedSpeaker.Add(names[i]);
+    }
+    void avazSeq(int a, int b)
+    {
+        var zSeq1 = Database.Films[Movie_Index].Script[Act_Index].Sequences[a];
+        Database.Films[Movie_Index].Script[Act_Index].Sequences[a] = Database.Films[Movie_Index].Script[Act_Index].Sequences[b];
+        Database.Films[Movie_Index].Script[Act_Index].Sequences[b] = zSeq1;
+    }
+    void avazAct(int a, int b)
+    {
+        var zAct1 = Database.Films[Movie_Index].Script[a];
+        Database.Films[Movie_Index].Script[a] = Database.Films[Movie_Index].Script[b];
+        Database.Films[Movie_Index].Script[b] = zAct1;
+    }
+    async Task deleteAct(Part xx)
+    {
+        MainPage mm = new MainPage();
+        bool bb = await mm.deleteElem("act");
+        if (!bb) return;
+        what = WhatIsIt.Movie;
+        movie.Script.Remove(xx);
+        Database.SeeActors();
+        StateHasChanged();
+    }
+    async Task deleteElement(Element xx)
+    {
+        MainPage mm = new MainPage();
+        string kind = "dialogue";
+        if (xx is Deed)
+            kind = "action";
+        bool bb = await mm.deleteElem(kind);
+        if (!bb) return;
+        sequence.Happenings.Remove(xx);
+        what = WhatIsIt.Sequence;
+        Database.SeeActors();
+        StateHasChanged();
+    }
+    async Task deleteSeq(Seq xx)
+    {
+        MainPage mm = new MainPage();
+        bool bb = await mm.deleteElem("sequence");
+        if (!bb) return;
+        part.Sequences.Remove(xx);
+        what = WhatIsIt.Act;
+        Database.SeeActors();
+        StateHasChanged();
+    }
+    async void deleteEpisode(Movie xx)
+    {
+        MainPage mm = new MainPage();
+        bool bb = await mm.deleteElem("episode");
+        if (!bb) return;
+        Database.Films.Remove(xx);
+        what = WhatIsIt.Nothing;
+        Database.SeeActors();
+        StateHasChanged();
+    }
+    void TogglePreview()
+    {
+        if (isPreview)
+        {
+            isPreview = false;
+            editPrev = "Preview";
+        }
+        else
+        {
+            isPreview = true;
+            editPrev = "Edit";
+        }
+    }
+    async void saveToHTML()
+    {
+        string s = Database.Export(movie, taraf);
+        var cc = new CancellationTokenSource();
+        var stream = new MemoryStream(Encoding.Default.GetBytes(s));
+        FileSaverResult gg = await FileSaver.SaveAsync(currentHTML, stream, cc.Token);
+        if (gg == null || gg.FilePath == "") return;
+        currentHTML = gg.FilePath;
+        StateHasChanged();
+    }
+    async void saveToDB()
+    {
+        string s = Database.Save();
+        var cc = new CancellationTokenSource();
+        var stream = new MemoryStream(Encoding.Default.GetBytes(s));
+        FileSaverResult gg = await FileSaver.SaveAsync(currentXML, stream, cc.Token);
+        if (gg == null || gg.FilePath == "") return;
+        currentXML = gg.FilePath;
+        StateHasChanged();
+    }
+    async Task<string> openFile()
+    {
+        var cc = new CancellationTokenSource();
+        FileResult result = await FilePicker.PickAsync();
+        if (result == null) return "";
+        return result.FullPath;
+    }
+    async void LoadingSuccess()
+    {
+        string fileNotFound = "";
+        currentXML = await openFile();
+        if (string.IsNullOrEmpty(currentXML)) return;
+        fileNotFound = Database.Load(currentXML);
+        if (fileNotFound == "") what = WhatIsIt.Nothing;
+        StateHasChanged();
+    }
+}
