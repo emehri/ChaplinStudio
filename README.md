@@ -1,4 +1,4 @@
-# MyMauiApp
+# Chaplin Studio
 This is a simple but powerful tool for writing screenplays. It's very user-friendly. It uses XML documents but you can save it in HTML format.
 
 ## Features
